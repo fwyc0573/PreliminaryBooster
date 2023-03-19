@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+        limit_bandwidth: '1'
+        limit_delay: '250'
+      name: pod1
+    spec:
+      containers:
+      - image: fengyicheng/postgres:13.1
+        imagePullPolicy: Never
+        name: postgres
+        resources:
+          limits:
+            cpu: 100m
+            ephemeral-storage: 1Gi
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 1Gi
+            memory: 1Gi
+      schedulerName: booster-scheduler

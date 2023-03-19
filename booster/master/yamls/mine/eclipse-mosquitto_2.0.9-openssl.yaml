@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eclipse-mosquitto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+        limit_bandwidth: '1'
+        limit_delay: '250'
+      name: pod1
+    spec:
+      containers:
+      - image: fengyicheng/eclipse-mosquitto:2.0.9-openssl
+        imagePullPolicy: Never
+        name: eclipse-mosquitto
+        resources:
+          limits:
+            cpu: 100m
+            ephemeral-storage: 1Gi
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 1Gi
+            memory: 1Gi
+      schedulerName: booster-scheduler

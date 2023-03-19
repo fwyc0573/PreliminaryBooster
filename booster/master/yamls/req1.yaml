@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      name: pod1
+      labels:
+        app: app1
+        limit_delay: "250"
+        limit_bandwidth: "1"
+    spec:
+      containers:
+      - name: offload-cloud-test
+        image: fengyicheng/offload_cloud:latest
+        imagePullPolicy: Never
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "100m"
+            ephemeral-storage: "1Gi"
+          requests:
+            memory: "1Gi"
+            cpu: "100m"
+            ephemeral-storage: "1Gi"
+      schedulerName: booster-scheduler
