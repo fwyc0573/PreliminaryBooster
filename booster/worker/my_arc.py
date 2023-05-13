@@ -4,6 +4,7 @@ import copy
 from collections import namedtuple
 from typing import Dict, Optional
 
+
 class Layer(object):
     def __init__(self, layer_id: str, image_name: str, image_id: str, size: int):
         self.key: str = layer_id
@@ -17,7 +18,6 @@ class Layer(object):
 
 
 class ARC(object):
-
     def __init__(self, maxsize: int, local_cache_path: str):
         self._cache = {}
         self._T1 = deque()
@@ -34,8 +34,12 @@ class ARC(object):
         init_layer_list = []
         for layer_id in item_lst:
             path_item = os.path.join(self.local_cache_path, layer_id)
-            layer_size = int(os.path.getsize(os.path.join(path_item, "layer.tar"))/1024/1024)
-            _, remove_back_layer_list = self.set(key=layer_id, image_name="", image_id="", size=layer_size)
+            layer_size = int(
+                os.path.getsize(os.path.join(path_item, "layer.tar")) / 1024 / 1024
+            )
+            _, remove_back_layer_list = self.set(
+                key=layer_id, image_name="", image_id="", size=layer_size
+            )
             init_layer_list.append({layer_id: layer_size})
             if len(remove_back_layer_list) > 0:
                 raise
@@ -44,17 +48,19 @@ class ARC(object):
     def get(self, key):
         try:
             value = self._cache[key]
-            return value#, hit_flag, remove_list
+            return value  # , hit_flag, remove_list
         except Exception as e:
-            print('miss', e)
-            return 'miss', False, []
+            print("miss", e)
+            return "miss", False, []
 
     def set(self, key: str, image_name: str, image_id: str, size: int):
         if self._maxsize < size:
             return False, []
         else:
             hit_flag, remove_list = self._adapt(key, size)  # 当添加新元素时，更新列表
-            tmp_node = Layer(layer_id=key, image_name=image_name, image_id=image_id, size=size)
+            tmp_node = Layer(
+                layer_id=key, image_name=image_name, image_id=image_id, size=size
+            )
             self._cache[key] = tmp_node
         return not hit_flag, remove_list
 
@@ -62,7 +68,9 @@ class ARC(object):
         hit_flag_adapt = True
         remove_list = []
         cnt = (self._T1, self._B1, self._T2, self._B2)
-        lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt)
+        lt1, lb1, lt2, lb2 = (
+            sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt
+        )
         if key in self._cache:
             hit_flag_adapt = True
             if key in self._T1:
@@ -108,20 +116,29 @@ class ARC(object):
                         del self._cache[remove_id]
 
                     cnt = (self._T1, self._B1, self._T2, self._B2)
-                    lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt)
+                    lt1, lb1, lt2, lb2 = (
+                        sum([self._cache[one_key].size for one_key in one_list])
+                        for one_list in cnt
+                    )
 
             else:
                 sm = lt1 + lt2 + lb1 + lb2
                 while sm >= self._maxsize:
-                    while sm >= 2*self._maxsize:
-                        remove_id =  self._B2.popleft()
+                    while sm >= 2 * self._maxsize:
+                        remove_id = self._B2.popleft()
                         remove_list.append(remove_id)
                         cnt = (self._T1, self._B1, self._T2, self._B2)
-                        lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt)
+                        lt1, lb1, lt2, lb2 = (
+                            sum([self._cache[one_key].size for one_key in one_list])
+                            for one_list in cnt
+                        )
                         sm = lt1 + lt2 + lb1 + lb2
 
                     self._replace(key)
-                    lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt)
+                    lt1, lb1, lt2, lb2 = (
+                        sum([self._cache[one_key].size for one_key in one_list])
+                        for one_list in cnt
+                    )
                     sm = lt1 + lt2 + lb1 + lb2
             self._T1.append(key)
         return hit_flag_adapt, remove_list
@@ -155,17 +172,16 @@ class ARC(object):
         del self._cache[x]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     max_size = 10
-    scheduler = ARC(max_size, '')
+    scheduler = ARC(max_size, "")
 
     print(3, scheduler.set(key="4", image_name="4", image_id="14", size=3))
-    print(2,scheduler.set(key="5", image_name="5", image_id="15", size=2))
-    print(4,scheduler.set(key="6", image_name="6", image_id="16", size=4))
-    print(1,scheduler.set(key="7", image_name="7", image_id="17", size=1))
-    print(1,scheduler.set(key="7", image_name="7", image_id="17", size=1))
-    print(4,scheduler.set(key="8", image_name="8", image_id="18", size=4))
-
+    print(2, scheduler.set(key="5", image_name="5", image_id="15", size=2))
+    print(4, scheduler.set(key="6", image_name="6", image_id="16", size=4))
+    print(1, scheduler.set(key="7", image_name="7", image_id="17", size=1))
+    print(1, scheduler.set(key="7", image_name="7", image_id="17", size=1))
+    print(4, scheduler.set(key="8", image_name="8", image_id="18", size=4))
 
     scheduler.contains()
     print(f"MAX size: {max_size}\n")

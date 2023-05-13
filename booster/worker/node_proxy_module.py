@@ -19,20 +19,21 @@ agent = BoosterAgent()
 
 
 class Proxy(object):
-
     def __init__(self, agent_instance=None, port="9000", ip="0.0.0.0"):
         self.agent = agent_instance
         self.port = port
         self.ip = ip
 
     def proxy_start(self, debug=False, threaded=True):
-        threading.Thread(target=app.run, args=(self.ip, self.port, debug, threaded)).start()
+        threading.Thread(
+            target=app.run, args=(self.ip, self.port, debug, threaded)
+        ).start()
 
 
 @app.route("/proxy_node/update_receiver", methods=["POST"])
 def proxy_update_receiver():
-    trans_id = request.headers['trans_id']
-    from_node = request.headers['from_node']
+    trans_id = request.headers["trans_id"]
+    from_node = request.headers["from_node"]
 
     global agent
     whole_trans_dict = request.json
@@ -59,12 +60,13 @@ def proxy_update_receiver():
 
     agent.bro_to_send_add(bro_to_send_dict) if bro_to_send_dict else 0
 
-
     bro_get_check_dict = whole_trans_dict["bro_get_check"]
     print("bro_get_check_dict:", bro_get_check_dict)
     # agent.bro_get_check_add(bro_get_check_dict) if bro_get_check_dict else 0
 
-    agent.local_to_del_add(local_to_del_dict) if local_to_del_dict["layer"] or local_to_del_dict["file"] else 0
+    agent.local_to_del_add(local_to_del_dict) if local_to_del_dict[
+        "layer"
+    ] or local_to_del_dict["file"] else 0
     print("local_to_del_dict:", local_to_del_dict)
 
     return jsonify(status="success")
@@ -77,14 +79,22 @@ def thread_exception(worker):
 
 
 def thr_save_decompress(args):
-    print("flask thr_save_decompress | Thread %s, parent process %s" % (threading.get_ident(), os.getppid()))
+    print(
+        "flask thr_save_decompress | Thread %s, parent process %s"
+        % (threading.get_ident(), os.getppid())
+    )
 
     trans_layer, agent, image_id, flow_type = args
     layer_name = trans_layer.filename  # 现在为layer_id+"layer.tar"(本来是带有.tar.gz后缀)
-    print(f"thr_save_decompress | layer_name:{layer_name}, layer_name[:-9]={layer_name[:-9]}")
+    print(
+        f"thr_save_decompress | layer_name:{layer_name}, layer_name[:-9]={layer_name[:-9]}"
+    )
 
-    my_path = agent.menu_basic_path + "construct/" + image_id + "/" if flow_type == "deploy" else \
-        agent.menu_basic_path + "layer/"
+    my_path = (
+        agent.menu_basic_path + "construct/" + image_id + "/"
+        if flow_type == "deploy"
+        else agent.menu_basic_path + "layer/"
+    )
     if not agent.check_if_local_exit("layer", layer_name[:-9]):  # 不在cache中即可
         # tmp_path = agent.menu_basic_path + "tmp/" + layer_name
         dir_tmp_path = agent.menu_basic_path + "tmp/" + layer_name[:-9]
@@ -98,7 +108,6 @@ def thr_save_decompress(args):
         tar_layer_save_path = os.path.join(dir_tmp_path, "layer.tar")
         trans_layer.save(tar_layer_save_path)
 
-
         # 检查构建的image_id目录是否存在
         try:
             os.mkdir(my_path, mode=0o777)
@@ -107,28 +116,30 @@ def thr_save_decompress(args):
 
         shutil.move(dir_tmp_path, my_path)
         agent.coming_soon_update_queue.put(
-            {"action": "rm", "granularity": "layer", "my_id": layer_name[:-9]}) if layer_name[:-9] in \
-                                                                                   agent.coming_soon_set[
-                                                                                       "layer"] else 0
+            {"action": "rm", "granularity": "layer", "my_id": layer_name[:-9]}
+        ) if layer_name[:-9] in agent.coming_soon_set["layer"] else 0
     else:
         print("layer_name：", layer_name, " 已在本地存在副本，跳过下载...")
 
 
-
 pool = ThreadPoolExecutor()
+
+
 @app.route("/proxy_node/downloader", methods=["POST"])
 def proxy_downloader():
     # trans_metadata
-    layer_list = request.headers['trans_layer']
-    file_list = request.headers['trans_file']
-    miss_lf = request.headers['miss_lf']
-    from_node = request.headers['from_node']
-    trans_id = request.headers['trans_id']
-    image_id = request.headers['image_id']
-    timestamp = request.headers['timestamp']
-    flow_type = request.headers['flow_type']
+    layer_list = request.headers["trans_layer"]
+    file_list = request.headers["trans_file"]
+    miss_lf = request.headers["miss_lf"]
+    from_node = request.headers["from_node"]
+    trans_id = request.headers["trans_id"]
+    image_id = request.headers["image_id"]
+    timestamp = request.headers["timestamp"]
+    flow_type = request.headers["flow_type"]
 
-    print(f"proxy_downloader | from_node = {from_node}, layer_list = {layer_list}, time_use = {time.time()-float(timestamp)}")
+    print(
+        f"proxy_downloader | from_node = {from_node}, layer_list = {layer_list}, time_use = {time.time()-float(timestamp)}"
+    )
     # print(f"proxy_downloader | from_node = {from_node}, layer_list = {layer_list}, timestamp = {timestamp}")
 
     global agent
@@ -137,7 +148,9 @@ def proxy_downloader():
     result_list = []
 
     for trans_layer in downloaded_layers:
-        task = pool.submit(thr_save_decompress, (trans_layer, agent, image_id, flow_type))
+        task = pool.submit(
+            thr_save_decompress, (trans_layer, agent, image_id, flow_type)
+        )
         task.add_done_callback(thread_exception)
         result_list.append(task)
 
@@ -160,8 +173,17 @@ def proxy_downloader():
     return jsonify(status="success")
 
 
-def v1_proxy_uploader(target_ip, target_port, layer_list, file_list, trans_id, layer_tag="my_layer",
-                   file_tag="my_file", image_id="0", flow_type="deploy"):
+def v1_proxy_uploader(
+    target_ip,
+    target_port,
+    layer_list,
+    file_list,
+    trans_id,
+    layer_tag="my_layer",
+    file_tag="my_file",
+    image_id="0",
+    flow_type="deploy",
+):
     upload_time1 = time.time()
     url = "http://" + target_ip + ":" + target_port + "/proxy_node/downloader"
     whole_lf_list = []
@@ -193,19 +215,29 @@ def v1_proxy_uploader(target_ip, target_port, layer_list, file_list, trans_id, l
         "trans_id": str(trans_id),  # 传输编号，用于check
         "image_id": str(image_id),
         "timestamp": str(time.time()),
-        "flow_type": flow_type
+        "flow_type": flow_type,
     }
 
     res = requests.post(url=url, headers=header, files=whole_lf_list)
-    print(f"proxy_uploader | trans_layer_list: {layer_list}, 完成压缩与post用时: {time.time() - upload_time1}")
+    print(
+        f"proxy_uploader | trans_layer_list: {layer_list}, 完成压缩与post用时: {time.time() - upload_time1}"
+    )
 
     remove_layerFile(record_name_list)
     return res.status_code
 
 
-
-def proxy_uploader(target_ip, target_port, layer_list, file_list, trans_id, layer_tag="my_layer",
-                   file_tag="my_file", image_id="0", flow_type="deploy"):
+def proxy_uploader(
+    target_ip,
+    target_port,
+    layer_list,
+    file_list,
+    trans_id,
+    layer_tag="my_layer",
+    file_tag="my_file",
+    image_id="0",
+    flow_type="deploy",
+):
     upload_time1 = time.time()
     url = "http://" + target_ip + ":" + target_port + "/proxy_node/downloader"
     whole_lf_list = []
@@ -222,7 +254,7 @@ def proxy_uploader(target_ip, target_port, layer_list, file_list, trans_id, laye
             continue
 
         tar_complete_path = os.path.join(my_path, "layer.tar")
-        tar_change_path = os.path.join(my_path, each_layer+"layer.tar")
+        tar_change_path = os.path.join(my_path, each_layer + "layer.tar")
         os.rename(tar_complete_path, tar_change_path)
         whole_lf_list.append((layer_tag, open(tar_change_path, "rb")))
         os.rename(tar_change_path, tar_complete_path)
@@ -236,11 +268,13 @@ def proxy_uploader(target_ip, target_port, layer_list, file_list, trans_id, laye
         "trans_id": str(trans_id),
         "image_id": str(image_id),
         "timestamp": str(time.time()),
-        "flow_type": flow_type
+        "flow_type": flow_type,
     }
 
     res = requests.post(url=url, headers=header, files=whole_lf_list)
-    print(f"proxy_uploader | trans_layer_list: {layer_list}, 完成压缩与post用时: {time.time() - upload_time1}")
+    print(
+        f"proxy_uploader | trans_layer_list: {layer_list}, 完成压缩与post用时: {time.time() - upload_time1}"
+    )
 
     return res.status_code
 
@@ -253,25 +287,32 @@ def proxy_changes_syncer(target_ip, target_port, node_name, sync_dict):
         "from_node": node_name,
     }
 
-    print("proxy_update_notifier has successfully sent the msg to ", target_ip, "; sync_dict:", sync_dict)
+    print(
+        "proxy_update_notifier has successfully sent the msg to ",
+        target_ip,
+        "; sync_dict:",
+        sync_dict,
+    )
     res = requests.post(url=url, headers=header, json=sync_dict)
-    print('from ', target_ip, ' proxy_update_notifier get returns: ', res.status_code)
+    print("from ", target_ip, " proxy_update_notifier get returns: ", res.status_code)
     return res.status_code
 
 
 @app.route("/proxy_node/push_schedule_node_receiver", methods=["POST"])
 def proxy_push_schedule_node_receiver():
-    from_node = request.headers['from_node']
-    image_id = request.headers['image_id']
-    image_name = request.headers['image_name']
-    lack_dict = json.loads(request.headers['lack_dict'])
-    hub_to_get_dict = json.loads(request.headers['hub_to_get_dict'])
+    from_node = request.headers["from_node"]
+    image_id = request.headers["image_id"]
+    image_name = request.headers["image_name"]
+    lack_dict = json.loads(request.headers["lack_dict"])
+    hub_to_get_dict = json.loads(request.headers["hub_to_get_dict"])
 
     global agent
     downloaded_metadata = request.files.getlist("image_metadata")
     metadata_store_path = agent.menu_basic_path + "construct/" + image_id + "/"
     metadata_cache_path = agent.menu_basic_path + "metadata_cache/" + image_id + "/"
-    agent.hub_to_get_add(hub_to_get_dict["layer"], image_id, work_type="deploy") if hub_to_get_dict["layer"] else 0
+    agent.hub_to_get_add(
+        hub_to_get_dict["layer"], image_id, work_type="deploy"
+    ) if hub_to_get_dict["layer"] else 0
     print(f"agent.hub_to_get_add -> {hub_to_get_dict['layer']}")
 
     try:
@@ -293,10 +334,14 @@ def proxy_push_schedule_node_receiver():
 
     for layer in lack_dict["layer"]:
         # agent.coming_soon_set["layer"].add(layer)
-        agent.coming_soon_update_queue.put({"action": "add", "granularity": "layer", "my_id": layer})
+        agent.coming_soon_update_queue.put(
+            {"action": "add", "granularity": "layer", "my_id": layer}
+        )
     for file in lack_dict["file"]:
         # agent.coming_soon_set["file"].add(file)
-        agent.coming_soon_update_queue.put({"action": "add", "granularity": "file", "my_id": file})
+        agent.coming_soon_update_queue.put(
+            {"action": "add", "granularity": "file", "my_id": file}
+        )
     # print(f"proxy_push_schedule_node_receiver | coming_soon_set = {agent.coming_soon_set['layer']}")
 
     agent.deploy_construct_add([image_id, image_name, lack_dict])
@@ -306,21 +351,29 @@ def proxy_push_schedule_node_receiver():
 
 @app.route("/proxy_node/push_node_receiver", methods=["POST"])
 def proxy_push_node_receiver():
-    from_node = request.headers['from_node']
-    schedule_node_ip = request.headers['schedule_node_ip']
-    schedule_node_port = request.headers['schedule_node_port']
-    image_id = request.headers['image_id']
-    flow_type = request.headers['flow_type']
+    from_node = request.headers["from_node"]
+    schedule_node_ip = request.headers["schedule_node_ip"]
+    schedule_node_port = request.headers["schedule_node_port"]
+    image_id = request.headers["image_id"]
+    flow_type = request.headers["flow_type"]
 
     whole_trans_dict = request.json  # {"layer": [], "file": []}
 
-    res = proxy_uploader(schedule_node_ip, schedule_node_port, whole_trans_dict["layer"], whole_trans_dict["file"],
-                         "-1", image_id=image_id, flow_type=flow_type)
+    res = proxy_uploader(
+        schedule_node_ip,
+        schedule_node_port,
+        whole_trans_dict["layer"],
+        whole_trans_dict["file"],
+        "-1",
+        image_id=image_id,
+        flow_type=flow_type,
+    )
     return jsonify(status="success")
 
 
-
-def proxy_notify_kubectl_delete(target_ip, target_port, node_name, image_id, image_name, pull_time, cache_hit):
+def proxy_notify_kubectl_delete(
+    target_ip, target_port, node_name, image_id, image_name, pull_time, cache_hit
+):
     """
     kubeclt delete yaml
     pull_time collect
@@ -330,14 +383,24 @@ def proxy_notify_kubectl_delete(target_ip, target_port, node_name, image_id, ima
     header = {
         "from_node": node_name,
         "image_id": image_id,
-        'image_name': image_name,
+        "image_name": image_name,
         "pull_time": str(pull_time),
-        "hit_rate": str(cache_hit)
+        "hit_rate": str(cache_hit),
     }
 
-    print("proxy_notify_kubectl_delete has successfully sent the msg to ", target_ip, "; image_id:", image_id)
+    print(
+        "proxy_notify_kubectl_delete has successfully sent the msg to ",
+        target_ip,
+        "; image_id:",
+        image_id,
+    )
     res = requests.post(url=url, headers=header)
-    print('from ', target_ip, ' proxy_notify_kubectl_delete get returns: ', res.status_code)
+    print(
+        "from ",
+        target_ip,
+        " proxy_notify_kubectl_delete get returns: ",
+        res.status_code,
+    )
     return res.status_code
 
 
@@ -375,9 +438,7 @@ def node_agent_and_proxy_start():
     return my_proxy, agent
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # agent = Agent()
     proxy = Proxy()
     proxy.proxy_start()

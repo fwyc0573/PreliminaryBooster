@@ -6,6 +6,7 @@ from collections import deque
 # Layer = namedtuple('Layer', ['image_name', 'image_id', 'layer_id', 'size', 'freq', 'exit'])
 # Image = namedtuple('Image', ['image_name', 'image_id', 'size', 'freq', 'exit'])
 
+
 class Layer(object):
     #
     def __init__(self, layer_id: str, image_name: str, image_id: str, size: int):
@@ -21,7 +22,6 @@ class Layer(object):
 
 
 class DoubleLink(object):
-
     def __init__(self):
         self.head: Optional[Layer] = None
         self.tail: Optional[Layer] = None
@@ -43,7 +43,6 @@ class DoubleLink(object):
         self.head = node
         self.size += node.size
 
-
     def append_tail(self, node: Layer):
         if self.size <= 0:
             node.prev = None
@@ -59,7 +58,6 @@ class DoubleLink(object):
             old_tail.post = node
         self.tail = node
         self.size += node.size
-
 
     def remove(self, node: Layer):
         prev = node.prev
@@ -101,7 +99,6 @@ class DoubleLink(object):
 
 
 class LRU(object):
-
     def __init__(self, capacity: int):
         self.capacity: int = capacity
         self.keys: Dict[str, Layer] = dict()
@@ -144,7 +141,6 @@ class LRU(object):
 
 
 class LFU(object):
-
     def __init__(self, capacity: int):
         self.capacity: int = capacity
         self.keys: Dict[str, Layer] = dict()
@@ -205,10 +201,13 @@ class LFU(object):
         r_node = self.link.remove(node)
         self.link.append_front(r_node)
 
-        return node.size, node.freq,
+        return (
+            node.size,
+            node.freq,
+        )
+
 
 class ARC(object):
-
     def __init__(self, maxsize):
         self._cache = {}
         self._T1 = deque()
@@ -225,21 +224,25 @@ class ARC(object):
             self._adapt(key, value.size)
             return value
         except Exception as e:
-            print('miss', e)
-            return 'miss'
+            print("miss", e)
+            return "miss"
 
     def set(self, key: str, image_name: str, image_id: str, size: int) -> list:
         if self._maxsize < size:
             raise
         else:
             self._adapt(key, size)
-            node = Layer(layer_id=key, image_name=image_name, image_id=image_id, size=size)
+            node = Layer(
+                layer_id=key, image_name=image_name, image_id=image_id, size=size
+            )
             self._cache[key] = node
 
     def _adapt(self, key, size):
         cnt = (self._T1, self._B1, self._T2, self._B2)
 
-        lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt)
+        lt1, lb1, lt2, lb2 = (
+            sum([self._cache[one_key].size for one_key in one_list]) for one_list in cnt
+        )
         if key in self._cache:
             if key in self._T1:
                 self._T1.remove(key)
@@ -269,24 +272,32 @@ class ARC(object):
                     if flag == 0:
                         self._replace(key)
                         flag = 1
-                    lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in
-                                          cnt)
+                    lt1, lb1, lt2, lb2 = (
+                        sum([self._cache[one_key].size for one_key in one_list])
+                        for one_list in cnt
+                    )
                 else:
                     del self._cache[self._T1.popleft()]
-                    lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in
-                                          cnt)
+                    lt1, lb1, lt2, lb2 = (
+                        sum([self._cache[one_key].size for one_key in one_list])
+                        for one_list in cnt
+                    )
             else:
                 sm = lt1 + lt2 + lb1 + lb2
                 if sm >= self._maxsize:
                     while sm >= 2 * self._maxsize:
                         self._B2.popleft()
-                        lt1, lb1, lt2, lb2 = (sum([self._cache[one_key].size for one_key in one_list]) for one_list in
-                                              cnt)
+                        lt1, lb1, lt2, lb2 = (
+                            sum([self._cache[one_key].size for one_key in one_list])
+                            for one_list in cnt
+                        )
                         sm = lt1 + lt2 + lb1 + lb2
                     self._replace(key)
             self._T1.append(key)
 
-    def contains(self, ):
+    def contains(
+        self,
+    ):
         all_size = 0
         for node_index in self._cache:
             node = scheduler._cache[node_index]
@@ -314,7 +325,7 @@ class ARC(object):
         del self._cache[x]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # my_lru = LRU(2000)
     # my_lru.set(key="1", image_name="python1.2", image_id="image1", size=100)
     # my_lru.set(key="2", image_name="java.21", image_id="image2", size=200)
@@ -335,7 +346,6 @@ if __name__ == '__main__':
     my_lfu.set(key="5", image_name="5", image_id="5", size=4)
     print(my_lfu.link)
     # my_lfu.set(key="3", image_name="1", image_id="1", size=1)
-
 
     ##################### ARC-TEST ####################
     max_size = 10

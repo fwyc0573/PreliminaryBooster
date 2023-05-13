@@ -15,8 +15,8 @@ class Layer(object):
         self.size = size
         self.freq: int = 1
 
-class DoubleLink(object):
 
+class DoubleLink(object):
     def __init__(self):
         self.head: Optional[Layer] = None
         self.tail: Optional[Layer] = None
@@ -90,11 +90,13 @@ class DoubleLink(object):
         while head:
             nodes.append(f"【layer: {head.key}, freq: {head.freq}, size: {head.size}】")
             head = head.post
-        return " -> ".join(nodes) + f"| head = {self.head.key}, tail = {self.tail.key}, link_size = {self.size}"
+        return (
+            " -> ".join(nodes)
+            + f"| head = {self.head.key}, tail = {self.tail.key}, link_size = {self.size}"
+        )
 
 
 class LRU(object):
-
     def __init__(self, capacity: int, local_cache_path: str):
         self.capacity = capacity
         self.local_cache_path = local_cache_path
@@ -110,14 +112,17 @@ class LRU(object):
         init_layer_list = []
         for layer_id in item_lst:
             path_item = os.path.join(self.local_cache_path, layer_id)
-            layer_size = int(os.path.getsize(os.path.join(path_item, "layer.tar"))/1024/1024)
-            _, remove_back_layer_list = self.set(key=layer_id, image_name="", image_id="", size=layer_size)
+            layer_size = int(
+                os.path.getsize(os.path.join(path_item, "layer.tar")) / 1024 / 1024
+            )
+            _, remove_back_layer_list = self.set(
+                key=layer_id, image_name="", image_id="", size=layer_size
+            )
             init_layer_list.append({layer_id: layer_size})
             if len(remove_back_layer_list) > 0:
                 raise
         print(f"init_cache_add | 完成init, self.link = {self.link}")
         return init_layer_list
-
 
     def set(self, key: str, image_name: str, image_id: str, size: int) -> bool and list:
         remove_back_layer_list = []
@@ -146,7 +151,6 @@ class LRU(object):
         self.link.append_front(node)
         return True, remove_back_layer_list
 
-
     def get(self, key: str):
         if key not in self.keys:
             return None
@@ -155,7 +159,6 @@ class LRU(object):
 
 
 class LFU(object):
-
     def __init__(self, capacity: int, local_cache_path: str):
         self.capacity = capacity
         self.local_cache_path = local_cache_path
@@ -171,8 +174,12 @@ class LFU(object):
         init_layer_list = []
         for layer_id in item_lst:
             path_item = os.path.join(self.local_cache_path, layer_id)
-            layer_size = int(os.path.getsize(os.path.join(path_item, "layer.tar"))/1024/1024)
-            _, remove_back_layer_list = self.set(key=layer_id, image_name="", image_id="", size=layer_size)
+            layer_size = int(
+                os.path.getsize(os.path.join(path_item, "layer.tar")) / 1024 / 1024
+            )
+            _, remove_back_layer_list = self.set(
+                key=layer_id, image_name="", image_id="", size=layer_size
+            )
             init_layer_list.append({layer_id: layer_size})
             if len(remove_back_layer_list) > 0:
                 raise
@@ -235,11 +242,13 @@ class LFU(object):
             return None
         node = self.keys[key]
 
-        return node.size, node.freq,
+        return (
+            node.size,
+            node.freq,
+        )
 
 
 class NAIVEALG(object):
-
     def __init__(self, capacity: int, local_cache_path: str):
         self.capacity = capacity
         self.local_cache_path = local_cache_path
@@ -255,8 +264,12 @@ class NAIVEALG(object):
         init_layer_list = []
         for layer_id in item_lst:
             path_item = os.path.join(self.local_cache_path, layer_id)
-            layer_size = int(os.path.getsize(os.path.join(path_item, "layer.tar"))/1024/1024)
-            _, remove_back_layer_list = self.set(key=layer_id, image_name="", image_id="", size=layer_size)
+            layer_size = int(
+                os.path.getsize(os.path.join(path_item, "layer.tar")) / 1024 / 1024
+            )
+            _, remove_back_layer_list = self.set(
+                key=layer_id, image_name="", image_id="", size=layer_size
+            )
             init_layer_list.append({layer_id: layer_size})
             if len(remove_back_layer_list) > 0:
                 raise
@@ -289,7 +302,7 @@ class NAIVEALG(object):
         return node.size, node.freq
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # my_lru = LRU(2000, "/home/node71/edge_cloud_DB/layer")
     my_NAIVEALG = NAIVEALG(2000, "/home/node71/edge_cloud_DB/layer")
     my_NAIVEALG.set(key="1", image_name="python1.2", image_id="image1", size=100)
